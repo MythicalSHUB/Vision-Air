@@ -18,6 +18,10 @@ export const enhanceImage = async (
   if (data.error) {
     throw new Error(data.error);
   }
+  if (error.message.includes("quota") || error.message.includes("RESOURCE_EXHAUSTED")) {
+  throw new Error("🔥 You've hit the free Gemini quota limit. Turn on billing or try again tomorrow.");
+}
+
 
   return data.image; // base64 result returned by server
 };
