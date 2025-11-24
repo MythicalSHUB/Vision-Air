@@ -1,12 +1,11 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 // Initialize the Gemini API client
-// API Key is injected via process.env.API_KEY
-// Using a factory function to ensure we get the latest environment variable if it updates
+// Using function so newest env key is used
 const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Enhances an image using the gemini-2.5-flash-image model.
+ * Enhances an image using the Gemini model.
  * 
  * @param base64Image The base64 string of the source image (excluding data:image/... prefix).
  * @param mimeType The mime type of the image.
@@ -20,8 +19,10 @@ export const enhanceImage = async (
 ): Promise<string> => {
   try {
     const ai = getAiClient();
+    
+    // Use gemini-2.5-flash-image for general image generation and editing tasks
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: "gemini-2.5-flash-image",
       contents: {
         parts: [
           {
@@ -35,17 +36,18 @@ export const enhanceImage = async (
           },
         ],
       },
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
     });
 
     // Extract the image from the response
-    const parts = response.candidates?.[0]?.content?.parts;
-    if (parts && parts.length > 0) {
-      for (const part of parts) {
-        if (part.inlineData && part.inlineData.data) {
-          return part.inlineData.data;
+    // The response might contain multiple parts (text, image), so we iterate to find the image.
+    const candidates = response.candidates;
+    if (candidates && candidates.length > 0) {
+      const parts = candidates[0].content?.parts;
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData?.data) {
+            return part.inlineData.data;
+          }
         }
       }
     }
@@ -56,8 +58,7 @@ export const enhanceImage = async (
     
     let message = error.message || "Failed to enhance image.";
 
-    // Handle Quota/Rate Limit errors gracefully
-    // This hides the raw 429 JSON error and presents a clean message
+    // Handle Quota/Rate Limit errors
     if (
       message.includes("429") || 
       message.includes("quota") || 
@@ -70,7 +71,7 @@ export const enhanceImage = async (
     else if (message.includes("SAFETY") || message.includes("blocked")) {
       message = "Image processing was blocked by safety filters. Please use a different image.";
     }
-    // Handle JSON error objects that might be stringified in the message
+    // Handle JSON-like error messages
     else if (message.includes('{"error":')) {
       try {
         const jsonObj = JSON.parse(message.substring(message.indexOf('{')));
@@ -80,7 +81,6 @@ export const enhanceImage = async (
           message = jsonObj.error?.message || "An unexpected error occurred with the AI service.";
         }
       } catch (e) {
-        // If parsing fails, keep original message but cleaned up
         message = "Service is currently busy. Please try again.";
       }
     }
@@ -92,13 +92,17 @@ export const enhanceImage = async (
 export const getPromptForType = (type: string, customPrompt?: string): string => {
   switch (type) {
     case 'High Quality Restore':
-      return "Create a high-quality, high-resolution version of this image. Improve sharpness, lighting, and details while maintaining the original composition and subject identity exactly. Photorealistic 8k output.";
+      return "Create a high-quality, high-resolution version of this image. Improve sharpness, lighting, and details while maintaining the original composition and subject identity exactly. Photorealistic 8K output.";
+
     case 'Creative Upscale':
-      return "Re-imagine this image in ultra-high definition. Add intricate details, dramatic lighting, and rich textures. Make it look like a masterpiece. Cinematic 8k quality.";
+      return "Re-imagine this image in ultra-high definition. Add intricate details, dramatic lighting, and rich textures. Cinematic 8K quality.";
+
     case 'Portrait Enhance':
-      return "Enhance the subject's face, skin texture, and lighting in this portrait. Improve sharpness and clarity. STRICTLY PRESERVE the original background and surroundings. Do not remove any objects or change the background. Maintain subject identity exactly.";
+      return "Enhance the subject's face, skin texture, and lighting in this portrait. Improve sharpness and clarity. STRICTLY PRESERVE the original background and surroundings. Maintain subject identity exactly.";
+
     case 'Custom Prompt':
       return customPrompt || "Enhance this image.";
+
     default:
       return "Make this image high quality.";
   }
