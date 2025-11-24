@@ -36,6 +36,7 @@ export const enhanceImage = async (
           },
         ],
       },
+      // Ensure no responseMimeType is set as it is not supported for nano banana models
     });
 
     // Extract the image from the response
@@ -44,10 +45,22 @@ export const enhanceImage = async (
     if (candidates && candidates.length > 0) {
       const parts = candidates[0].content?.parts;
       if (parts) {
+        let textResponse = '';
+        
         for (const part of parts) {
+          // Check for image data
           if (part.inlineData?.data) {
             return part.inlineData.data;
           }
+          // Capture text response in case image is missing (usually implies refusal/error)
+          if (part.text) {
+            textResponse += part.text;
+          }
+        }
+
+        // If we found text but no image, throw the text as the error
+        if (textResponse) {
+           throw new Error(`Model Response: ${textResponse}`);
         }
       }
     }
