@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Vision Air",
+  "description": "Transform and enhance your images using the power of AI. Upload a photo to generate high-fidelity versions.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

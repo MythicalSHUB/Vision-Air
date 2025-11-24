@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vision Air</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    
+    <!-- Configuration & Styles -->
+    <script>
+      const API_KEY = "AIzaSyDmf9Isbw2Jvpt07uidGZy2uhslsU_nzmQ";
+
+      // Shim process.env for the app
+      window.process = {
+        env: {
+          API_KEY: API_KEY,
+          NODE_ENV: 'production'
+        }
+      };
+
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              glass: {
+                100: 'rgba(255, 255, 255, 0.1)',
+                200: 'rgba(255, 255, 255, 0.2)',
+                300: 'rgba(255, 255, 255, 0.3)',
+              }
+            },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            fontFamily: {
+              sans: ['"SF Pro Display"', 'Inter', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+        min-height: 100vh;
+        transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      /* Dark Mode Background */
+      html.dark body {
+        background-color: #000000;
+        background-image: 
+          radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 45%),
+          radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.2), transparent 45%);
+        background-attachment: fixed;
+        color: #ffffff;
+      }
+
+      /* Light Mode Background */
+      html:not(.dark) body {
+        background-color: #f0f4f8;
+        background-image: 
+          radial-gradient(circle at 10% 20%, rgba(219, 234, 254, 0.8), transparent 40%),
+          radial-gradient(circle at 90% 80%, rgba(233, 213, 255, 0.8), transparent 40%);
+        background-attachment: fixed;
+        color: #1a202c;
+      }
+      
+      .glass-panel {
+        transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+
+      html.dark .glass-panel {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      html:not(.dark) .glass-panel {
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+      }
+      html.dark ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(156, 163, 175, 0.8);
+      }
+      html.dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.3);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
+  </body>
+</html>
