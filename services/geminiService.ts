@@ -1,28 +1,27 @@
 import { GoogleGenAI } from "@google/genai";
 
+// Get API Key (supports Vercel + Vite local dev)
+const getApiKey = () => {
+  return (
+    process.env.API_KEY || // Server-side
+    import.meta.env.VITE_API_KEY // Client-side build
+  );
+};
+
 // Initialize the Gemini API client
-// Tries GEMINI_API_KEY first (official), then API_KEY (your custom)
 const getAiClient = () => {
-  const apiKey =
-    process.env.GEMINI_API_KEY || // official env name
-    process.env.API_KEY;         // your existing one
+  const apiKey = getApiKey();
 
   if (!apiKey) {
-    throw new Error(
-      "API Key is missing. Set GEMINI_API_KEY or API_KEY in environment variables."
-    );
+    throw new Error("⚠️ Gemini API Key Missing. Set API_KEY or VITE_API_KEY in environment.");
   }
 
-  return new GoogleGenAI({ apiKey }); // this is valid per official docs
+  return new GoogleGenAI({ apiKey });
 };
 
 /**
  * Enhances an image using the Gemini model.
- *
- * @param base64Image The base64 string of the source image (excluding data:image/... prefix).
- * @param mimeType The mime type of the image.
- * @param prompt The text prompt describing the enhancement.
- * @returns The base64 string of the generated image.
+ * @returns base64 enhanced image
  */
 export const enhanceImage = async (
   base64Image: string,
@@ -43,73 +42,39 @@ export const enhanceImage = async (
                 mimeType,
               },
             },
-            {
-              text: prompt,
-            },
+            { text: prompt },
           ],
         },
       ],
     });
 
     const candidates = response.candidates;
-    if (candidates && candidates.length > 0) {
+    if (candidates?.length) {
       const parts = candidates[0].content?.parts;
-      if (parts) {
-        let textResponse = "";
+      let fallbackMessage = "";
 
-        for (const part of parts) {
-          if (part.inlineData?.data) {
-            // ✅ Found image output
-            return part.inlineData.data;
-          }
-          if (part.text) {
-            textResponse += part.text;
-          }
-        }
+      for (const part of parts ?? []) {
+        if (part.inlineData?.data) return part.inlineData.data;
+        if (part.text) fallbackMessage += part.text;
+      }
 
-        if (textResponse) {
-          throw new Error(`Model Response: ${textResponse}`);
-        }
+      if (fallbackMessage) {
+        throw new Error(`Gemini Response: ${fallbackMessage}`);
       }
     }
 
-    throw new Error(
-      "No image data found in the response. The model may have refused the request or failed to generate output."
-    );
+    throw new Error("❌ No image returned from Gemini.");
   } catch (error: any) {
     console.error("Gemini API Error:", error);
 
     let message = error.message || "Failed to enhance image.";
 
-    if (
-      message.includes("429") ||
-      message.includes("quota") ||
-      message.includes("RESOURCE_EXHAUSTED") ||
-      message.includes("User has exceeded")
-    ) {
-      message = "Daily AI processing limit reached. Please try again later.";
-    } else if (message.includes("SAFETY") || message.includes("blocked")) {
-      message =
-        "Image processing was blocked by safety filters. Please use a different image.";
-    } else if (
-      message.includes("API key not valid") ||
-      message.includes("API_KEY_INVALID")
-    ) {
-      message =
-        "The provided API Key is invalid. Please check your Gemini API key in settings.";
-    } else if (message.includes('{"error":')) {
-      try {
-        const jsonObj = JSON.parse(message.substring(message.indexOf("{")));
-        if (jsonObj.error?.code === 429) {
-          message = "Daily AI processing limit reached. Please try again later.";
-        } else {
-          message =
-            jsonObj.error?.message ||
-            "An unexpected error occurred with the AI service.";
-        }
-      } catch {
-        message = "Service is currently busy. Please try again.";
-      }
+    if (message.includes("429") || message.includes("quota")) {
+      message = "🚫 AI Limit reached. Try again later.";
+    } else if (message.includes("SAFETY")) {
+      message = "⚠️ Blocked by safety filter. Try a different image.";
+    } else if (message.includes("API key not valid")) {
+      message = "🔑 Invalid API Key — check Vercel Environment Variables.";
     }
 
     throw new Error(message);
@@ -119,17 +84,13 @@ export const enhanceImage = async (
 export const getPromptForType = (type: string, customPrompt?: string): string => {
   switch (type) {
     case "High Quality Restore":
-      return "Create a high-quality, high-resolution version of this image. Improve sharpness, lighting, and details while maintaining the original composition and subject identity exactly. Photorealistic 8K output.";
-
+      return "Restore image with extreme clarity, accurate colors, sharp texture, and realistic lighting. Preserve identity. Output in 8K.";
     case "Creative Upscale":
-      return "Re-imagine this image in ultra-high definition. Add intricate details, dramatic lighting, and rich textures. Cinematic 8K quality.";
-
+      return "Upscale and enhance with rich detail, cinematic lighting, and advanced realism. 8K output.";
     case "Portrait Enhance":
-      return "Enhance the subject's face, skin texture, and lighting in this portrait. Improve sharpness and clarity. STRICTLY PRESERVE the original background and surroundings. Maintain subject identity exactly.";
-
+      return "Improve facial clarity, smooth skin naturally, enhance lighting and sharpness. KEEP background unchanged.";
     case "Custom Prompt":
-      return customPrompt || "Enhance this image.";
-
+      return customPrompt || "Enhance the image realistically.";
     default:
       return "Make this image high quality.";
   }
