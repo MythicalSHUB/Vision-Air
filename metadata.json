@@ -1,5 +1,5 @@
 {
-  "name": "Copy of Vision Air",
+  "name": "Vision Air - Deploy",
   "description": "Transform and enhance your images using the power of AI. Upload a photo to generate high-fidelity versions.",
   "requestFramePermissions": [
     "camera"
