@@ -20,15 +20,17 @@ export const enhanceImage = async (
   const ai = new GoogleGenAI({ apiKey });
 
   try {
-    // Use a single object for contents (not an array) for stateless generation
+    // Wrap in an array to ensure it's treated as a list of contents (standard message format)
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",
-      contents: {
-        parts: [
-          { inlineData: { data: base64Image, mimeType } },
-          { text: prompt }
-        ],
-      },
+      contents: [
+        {
+          parts: [
+            { inlineData: { data: base64Image, mimeType } },
+            { text: prompt }
+          ],
+        }
+      ],
     });
 
     const candidates = response.candidates;
@@ -63,7 +65,9 @@ export const enhanceImage = async (
     // Enhance the error message for the UI
     let msg = error.message || "An unexpected error occurred.";
     if (msg.includes("400") || msg.includes("INVALID_ARGUMENT")) {
-        msg = "Bad Request: Check your image format or prompt.";
+        // This specific error often happens on Vercel if the API Key has domain restrictions
+        // that don't include the Vercel domain, even if it works in Studio.
+        msg = "Bad Request. If this works locally/in Studio but fails here, check your API Key restrictions in Google Cloud Console (ensure your Vercel domain is allowed).";
     } else if (msg.includes("401") || msg.includes("API key")) {
         msg = "Invalid API Key.";
     } else if (msg.includes("500") || msg.includes("503")) {
