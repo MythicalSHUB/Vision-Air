@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import UploadArea from './components/UploadArea';
 import ResultView from './components/ResultView';
-import SponsorBanner from './components/SponsorBanner';
-import AdBlockDetector from './components/AdBlockDetector';
 import { ImageState, ProcessingState, EnhancementType } from './types';
 import { enhanceImage, getPromptForType } from './services/geminiService';
 import { Wand2, AlertCircle, Trash2, SlidersHorizontal } from 'lucide-react';
@@ -135,7 +133,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col selection:bg-blue-500/20 dark:selection:bg-white/20">
       
-      <AdBlockDetector />
       <Header darkMode={darkMode} toggleTheme={toggleTheme} />
 
       <main className="flex-grow container mx-auto px-4 py-12 flex flex-col items-center gap-10 transition-colors duration-500">
@@ -241,9 +238,6 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Ad Space Area */}
-        <SponsorBanner />
 
       </main>
       
