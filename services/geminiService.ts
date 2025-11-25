@@ -20,16 +20,15 @@ export const enhanceImage = async (
   const ai = new GoogleGenAI({ apiKey });
 
   try {
+    // Use a single object for contents (not an array) for stateless generation
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",
-      contents: [
-        {
-          parts: [
-            { inlineData: { data: base64Image, mimeType } },
-            { text: prompt }
-          ],
-        }
-      ],
+      contents: {
+        parts: [
+          { inlineData: { data: base64Image, mimeType } },
+          { text: prompt }
+        ],
+      },
     });
 
     const candidates = response.candidates;
