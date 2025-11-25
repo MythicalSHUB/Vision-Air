@@ -47,57 +47,89 @@ const App: React.FC = () => {
     setDarkMode(prev => !prev);
   };
 
+  /**
+   * Process the selected file:
+   * 1. Load into an Image object to verify decoding.
+   * 2. Draw to Canvas to normalize format to JPEG and resize if too large.
+   * 3. Generate clean Base64 data.
+   */
   const handleImageSelected = (file: File) => {
+    // Reset states
     if (imageState.previewUrl) URL.revokeObjectURL(imageState.previewUrl);
     setProcessingState({ isProcessing: false, error: null, resultBase64: null });
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
     
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      const base64Content = base64String.split(',')[1];
-      
-      // Robust MIME type detection
-      // 1. Start with the file object's type
-      let mimeType = file.type;
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
 
-      // 2. If missing or generic octet-stream, try to get from Data URL
-      if (!mimeType || mimeType === 'application/octet-stream') {
-        const match = base64String.match(/^data:([^;]+);/);
-        if (match && match[1] && match[1] !== 'application/octet-stream') {
-          mimeType = match[1];
+        // Resize if too large to prevent 400 errors or timeouts with massive payloads
+        const MAX_DIMENSION = 2048; 
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+          const ratio = width / height;
+          if (width > height) {
+            width = MAX_DIMENSION;
+            height = width / ratio;
+          } else {
+            height = MAX_DIMENSION;
+            width = height * ratio;
+          }
         }
+
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error("Could not initialize canvas context");
+        }
+
+        // Draw image to canvas
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to standard JPEG
+        // This fixes "Bad Request" errors caused by mismatched mime-types or unsupported formats (like raw HEIC)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const base64Content = dataUrl.split(',')[1];
+
+        setImageState({
+          file,
+          previewUrl: dataUrl, // Use the processed URL for preview so user sees exactly what API gets
+          base64: base64Content,
+          mimeType: 'image/jpeg', // Always jpeg after conversion
+        });
+
+      } catch (err) {
+        console.error("Image processing error:", err);
+        setProcessingState({
+          isProcessing: false,
+          error: "Failed to process image. Please try a different file.",
+          resultBase64: null
+        });
+      } finally {
+        // Clean up temporary object URL
+        URL.revokeObjectURL(objectUrl);
       }
+    };
 
-      // 3. If still missing or generic, infer from extension
-      if (!mimeType || mimeType === 'application/octet-stream') {
-         const extension = file.name.split('.').pop()?.toLowerCase();
-         switch(extension) {
-           case 'png': mimeType = 'image/png'; break;
-           case 'webp': mimeType = 'image/webp'; break;
-           case 'heic': mimeType = 'image/heic'; break;
-           case 'heif': mimeType = 'image/heif'; break;
-           default: mimeType = 'image/jpeg'; break;
-         }
-      }
-
-      // Create a Blob with the corrected MIME type for the preview URL.
-      // This ensures that if the OS reports 'application/octet-stream' for a valid JPEG,
-      // the browser will still render it correctly because we force the correct type.
-      const blob = file.slice(0, file.size, mimeType);
-      const newPreviewUrl = URL.createObjectURL(blob);
-
-      setImageState({
-        file,
-        previewUrl: newPreviewUrl,
-        base64: base64Content,
-        mimeType: mimeType,
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      setProcessingState({
+        isProcessing: false,
+        error: "Invalid image file. Browser could not decode it.",
+        resultBase64: null
       });
     };
-    reader.readAsDataURL(file);
+
+    img.src = objectUrl;
   };
 
   const handleEnhance = async () => {
-    if (!imageState.base64 || !imageState.file || !imageState.mimeType) return;
+    if (!imageState.base64 || !imageState.mimeType) return;
 
     setProcessingState({ isProcessing: true, error: null, resultBase64: null });
 

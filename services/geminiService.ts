@@ -60,11 +60,16 @@ export const enhanceImage = async (
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    // enhance the error message for the UI
+    
+    // Enhance the error message for the UI
     let msg = error.message || "An unexpected error occurred.";
-    if (msg.includes("400")) msg = "Bad Request: Check your image format or prompt.";
-    if (msg.includes("401") || msg.includes("API key")) msg = "Invalid API Key.";
-    if (msg.includes("500") || msg.includes("503")) msg = "AI Service is temporarily busy. Please retry.";
+    if (msg.includes("400") || msg.includes("INVALID_ARGUMENT")) {
+        msg = "Bad Request: Check your image format or prompt.";
+    } else if (msg.includes("401") || msg.includes("API key")) {
+        msg = "Invalid API Key.";
+    } else if (msg.includes("500") || msg.includes("503")) {
+        msg = "AI Service is temporarily busy. Please retry.";
+    }
     throw new Error(msg);
   }
 };
