@@ -1,8 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Ensure TypeScript recognizes the process shim from index.html
-declare const process: any;
-
 /**
  * Calls Gemini API directly from the client.
  * Uses the API Key injected via window.process in index.html.
@@ -12,7 +9,10 @@ export const enhanceImage = async (
   mimeType: string,
   prompt: string
 ): Promise<string> => {
-  const apiKey = process.env.API_KEY;
+  // Access window explicitly to bypass potential bundler polyfills of 'process'
+  // The index.html file defines window.process.env.API_KEY
+  const apiKey = (window as any).process?.env?.API_KEY;
+
   if (!apiKey) {
     throw new Error("API Key is missing. Please check your configuration.");
   }
